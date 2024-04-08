@@ -1,0 +1,293 @@
+@page "/{apartmentId:long}/dashboard"
+@using ApartmentManagmentBlazorAppCopy.Models
+@using ApartmentManagmentBlazorAppCopy.Services
+@using Azure.Core
+@inject IChoresService ChoreServices
+@inject IPurchaseServices PurchaseServices
+@inject IExploitationCostsServices CostsServices
+@inject IRentServices RentServices
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+
+<link href="css/formDispaly.css" rel="stylesheet" xmlns="http://www.w3.org/1999/html"/>
+<CardDeck Class="carddeckstyle">
+    <Card Background="Background.Body" Class="infobox">
+        
+        <Link To="@($"{ApartmentId}/purchases")" TextColor="TextColor.Black50" Class="custom-link">To buy</Link>
+
+        @if (PurchaseRecords is not null && PurchaseRecords.Any())
+        {
+            <Div>
+                <Table Hoverable>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHeaderCell>Name</TableHeaderCell>
+                            <TableHeaderCell>Cost</TableHeaderCell>
+                            <TableHeaderCell>Bought</TableHeaderCell>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        @foreach (var purchase in PurchaseRecords)
+                        {
+                            <TableRow>
+                                <TableRowCell>@purchase.ItemName</TableRowCell>
+                                <TableRowCell>@purchase.Cost</TableRowCell>
+                                <TableRowCell>
+                                    <Field>
+                                        <Check TValue="bool" CheckedChanged="@(() => MarkItemBought(purchase.Id, purchase.IsBought, purchase.UserId))" Checked="@purchase.IsBought"></Check>
+                                    </Field>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    </TableBody>
+                </Table>
+            </Div>
+        }
+        else
+        {
+            <Text>Nothing to buy</Text>
+        }
+    </Card>
+    <Card Background="Background.Body" Class="infobox">
+        <Link To="@($"{ApartmentId}/chores")" TextColor="TextColor.Black50" Class="custom-link">Chores to do</Link>
+        @if (Chores is not null && Chores.Any())
+        {
+            <Div>
+                <Table Hoverable>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHeaderCell>Chore name</TableHeaderCell>
+                            <TableHeaderCell>Completed</TableHeaderCell>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        @foreach (var chore in Chores)
+                        {
+                            <TableRow>
+                                <TableRowCell>@chore.ChoreName</TableRowCell>
+                                <TableRowCell>
+                                    <Field>
+                                        <Check TValue="bool" CheckedChanged="@(() => MarkChore(chore.Id, chore.IsDone, chore.UserId))"
+                                               Checked="@chore.IsDone"></Check>
+                                    </Field>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    </TableBody>
+                </Table>
+            </Div>
+        }
+        else
+        {
+            <Text>No chores to do</Text>
+        }
+    </Card>
+    <Card Background="Background.Body" Class="infobox">
+        <Text TextColor="TextColor.Black50" Class="custom-link">Upcoming dates</Text>
+        @if (RememberSections is not null && RememberSections.Any())
+        {
+            <Div>
+                <Table Hoverable>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHeaderCell>Tittle</TableHeaderCell>
+                            <TableHeaderCell>Date</TableHeaderCell>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        @foreach (var date in RememberSections)
+                        {
+                            <TableRow>
+                                <TableRowCell>@date.Name</TableRowCell>
+                                <TableRowCell>@date.Date</TableRowCell>
+                            </TableRow>
+                        }
+                    </TableBody>
+                </Table>
+            </Div>
+        }
+        else
+        {
+            <Text>No upcoming dates</Text>
+        }
+    </Card>
+</CardDeck>
+<Div Class="carddeckstyle div1">
+    <Card Background="Background.Body" Class="infobox2">
+                    <Text TextColor="TextColor.Black50" Class="custom-link">To pay</Text>
+                    @if (RememberSections is not null && RememberSections.Any())
+                    {
+                        <Div>
+                            <Table Hoverable>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHeaderCell>Tittle</TableHeaderCell>
+                                        <TableHeaderCell>Amount</TableHeaderCell>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    @foreach (var cost in ToPaySection)
+                                    {
+                                        <TableRow>
+                                            <TableRowCell>@cost.Name</TableRowCell>
+                                            <TableRowCell>@cost.Amount</TableRowCell>
+                                        </TableRow>
+                                    }
+                                </TableBody>
+                            </Table>
+                        </Div>
+                    }
+                    else
+                    {
+                        <Text>Nothing to pay</Text>
+                    }
+    </Card>
+</Div>
+
+
+
+@code {
+    public IList<Chore>? Chores;
+    public IList<PurchaseRecord>? PurchaseRecords;
+    public IList<RememberSection>? RememberSections;
+    public IList<ToPay>? ToPaySection;
+    [Parameter] public long ApartmentId { get; set; }
+
+    public class RememberSection
+    {
+        public DateOnly  Date { get; set; }
+        public string Name { get; set; } = null!;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Chores = GetChores();
+            PurchaseRecords = GetPurchases();
+            RememberSections = GetDates();
+            ToPaySection = await GetToPay();
+        }
+        catch (Exception ex)
+        {
+            // Handle exception, e.g., display an error message
+        }
+    }
+    public IList<RememberSection> GetDates()
+    {
+        IList<RememberSection> results = new List<RememberSection>();
+        var costsDates = CostsServices.GetApproachingDeadline(ApartmentId);
+        foreach (var cost in costsDates)
+        {
+            results.Add(new RememberSection()
+            {
+                Date = cost.DeadLine,
+                Name = cost.Type.ToString()
+            });
+        }
+
+        var rentsDates = RentServices.GetAprroachingDeadline(ApartmentId);
+        foreach (var rent in rentsDates)
+        {
+            results.Add(new RememberSection()
+            {
+                Date = rent.DeadLine,
+                Name = "Rent"
+            });
+        }
+
+        return results;
+    }
+    
+    public IList<Chore>? GetChores()
+    {
+        return ChoreServices.GetNotDoneChores(ApartmentId);
+    }
+    
+    public IList<PurchaseRecord> GetPurchases()
+    {
+        return PurchaseServices.GetPendingPurchases(ApartmentId);
+    }
+    public async Task MarkChore(long choreId, bool isDone, string? userId)
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            var _claims = user.Claims;
+            var id = _claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")!.Value;
+            userId = id;
+        }
+
+        if (!isDone is false)
+        {
+            userId = null;
+            
+        }
+        await ChoreServices.MarkChore(choreId, !isDone, userId);
+    }
+    private async Task MarkItemBought(long purchaseId, bool isBought, string? userId)
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            var _claims = user.Claims;
+            var id = _claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")!.Value;
+            userId = id;
+        }
+
+        if (!isBought is false)
+        {
+            userId = null;
+            
+        }
+        await PurchaseServices.MarkItemBought(purchaseId, !isBought, userId);
+
+    }
+
+    public class ToPay
+    {
+        public string Name { get; set; } = null!;
+        public double Amount { get; set; }
+    }
+
+    public async Task<IList<ToPay>?> GetToPay()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        string userId = null;
+        
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            var _claims = user.Claims;
+            var id = _claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")!.Value;
+            userId = id;
+        }
+        
+        IList<ToPay> results = new List<ToPay>();
+        var costsDates = CostsServices.GetToPay(ApartmentId, userId);
+        foreach (var cost in costsDates)
+        {
+            results.Add(new ToPay()
+            {
+                Name = "Bills",
+                Amount = cost.Share
+            });
+        }
+
+        var rentsDates = RentServices.GetToPay(ApartmentId, userId);
+        foreach (var rent in rentsDates)
+        {
+            results.Add(new ToPay()
+            {
+                Name = "Rent",
+                Amount = rent.Share
+            });
+        }
+
+        return results;
+    }
+}

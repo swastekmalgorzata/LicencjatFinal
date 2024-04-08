@@ -1,0 +1,96 @@
+@page "/{apartmentId:long}/rents"
+@using ApartmentManagmentBlazorAppCopy.Services
+@using ApartmentManagmentBlazorAppCopy.Models
+@inject IRentServices RentServices
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+<link href="css/formDispaly.css" rel="stylesheet" xmlns="http://www.w3.org/1999/html"/>
+
+<Card Background="Background.Body" Class="infobox" Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    <h3>Rents</h3>
+    <Div>
+        <Table Hoverable>
+            <TableHeader>
+                <TableRow>
+                    <TableHeaderCell>Month</TableHeaderCell>
+                    <TableHeaderCell>Amount</TableHeaderCell>
+                    <TableHeaderCell>Deadline</TableHeaderCell>
+                    <TableHeaderCell>Breakdown</TableHeaderCell>
+                    <TableHeaderCell>Edit</TableHeaderCell>
+                    <TableHeaderCell>Delete</TableHeaderCell>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                @foreach (var rent in Rents)
+                {
+                    <TableRow>
+                        <TableRowCell>@rent.Month</TableRowCell>
+                        <TableRowCell>@rent.WholeAmount</TableRowCell>
+                        <TableRowCell>@rent.DeadLine</TableRowCell>
+                        <TableRowCell>
+                            @foreach (var breakDown in rent.CustomCostBreakDown)
+                            {
+                                <Field>
+                                    @breakDown.RoommateName @breakDown.Share
+                                    <Check TValue="bool" CheckedChanged="@(() => MarkIsPaid(rent.RentId, breakDown.RoommateName, breakDown.IsPaid))" Checked="@breakDown.IsPaid"></Check>
+                                </Field>
+                            }
+                        </TableRowCell>
+                        <TableRowCell>
+                            <Button Clicked="@(() => EditRent(rent.RentId))" Color="Color.Primary">Edit</Button>
+                        </TableRowCell>
+                        <TableRowCell>
+                            <Button Clicked="@(() => DeleteRent(rent.RentId))" Color="Color.Danger">Delete</Button>
+                        </TableRowCell>
+                    </TableRow>
+                }
+            </TableBody>
+        </Table>
+    </Div>
+    <Button Clicked="@AddNewRent" Color="Color.Primary">Add new rent</Button>
+</Card>
+
+@code {
+    [Parameter] public long ApartmentId { get; set; }
+    private IList<Rent>? Rents;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            Rents = GetRentsFromService();
+        }
+        catch (Exception ex)
+        {
+            // Handle exception, e.g., display an error message
+        }
+    }
+
+    private IList<Rent>? GetRentsFromService()
+    {
+        return RentServices.GetRents(ApartmentId);
+    }
+
+    void EditRent(long rentId)
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/editAddRent/{rentId}");
+    }
+
+    private async Task DeleteRent(long rentId)
+    {
+        await RentServices.DeleteRent(ApartmentId, rentId);
+        NavigationManager.NavigateTo($"{ApartmentId}/rents");
+
+    }
+
+    void AddNewRent()
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/editAddRent");
+    }
+
+    async Task MarkIsPaid(long rentId, string name, bool isPaid)
+    {
+        await RentServices.MarkIsPaid(rentId, name, !isPaid);
+    }
+    
+}

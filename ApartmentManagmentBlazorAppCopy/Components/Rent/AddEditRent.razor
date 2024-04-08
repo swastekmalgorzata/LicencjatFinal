@@ -1,0 +1,233 @@
+@page "/{apartmentId:long}/editAddRent/{rentId:long}"
+@page "/{apartmentId:long}/editAddRent"
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using System.Security.Claims
+@using ApartmentManagmentBlazorAppCopy.Models
+@using ApartmentManagmentBlazorAppCopy.Requests.ApartmentRequests
+@using ApartmentManagmentBlazorAppCopy.Services
+@inject IRentServices RentServices
+@inject IRommateServices RoommateServices
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+
+<link href="css/formDispaly.css" rel="stylesheet" />
+
+<Div Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    
+    <Blazorise.Card Background="Background.Body" Class="infobox">
+        <Blazorise.CardTitle Size = "3">
+            @if (RentId != 0)
+            { 
+                <Text>Edit rent</Text>
+            }
+            else
+            {
+                <Text>Add rent</Text>
+            }
+        </Blazorise.CardTitle>
+        <Blazorise.CardBody>
+            <Validation Validator="ValidationRule.IsNotEmpty">
+                <Field>
+                    <FieldLabel>Month</FieldLabel>
+                    <Select @bind-SelectedValue="@RentForm.Month">
+                        @foreach (var month in Mounths)
+                        {
+                            <SelectItem value="@month"> @month </SelectItem>
+                        }
+                    </Select>
+                </Field>
+            </Validation>
+            <Validation Validator="ValidationRule.IsNotEmpty">
+                <Field>
+                    <FieldLabel>Whole amount</FieldLabel>
+                    <NumericEdit @bind-Value="@RentForm.WholeAmount" Placeholder="Amount">
+                        <Feedback>
+                            <ValidationSuccess>Amount is good.</ValidationSuccess>
+                            <ValidationError>Enter amount</ValidationError>
+                        </Feedback>
+                    </NumericEdit>
+                </Field>
+            </Validation>
+            <Validation Validator="ValidationRule.IsNotEmpty">
+                <Field>
+                    <FieldLabel>Deadline</FieldLabel>
+                    <DateEdit @bind-Date="@RentForm.DeadLine" Placeholder="Deadline">
+                        <Feedback>
+                            <ValidationSuccess>Deadline is good.</ValidationSuccess>
+                            <ValidationError>Enter deadline</ValidationError>
+                        </Feedback>
+                    </DateEdit>
+                </Field>
+            </Validation>
+            <Field>
+                <Check TValue="bool" Checked="@RentForm.CustomBreakdown" CheckedChanged="@OnRememberMeChanged">Custom breakdown</Check>
+            </Field>
+            @if (RentForm.CustomBreakdown)
+            {
+                if (RentForm.CustomCostBreakDown is not null)
+                {
+                    @foreach (var breakdown in RentForm.CustomCostBreakDown)
+                    {
+                        <Row>
+                            <Field>
+                                <FieldLabel>Name</FieldLabel>
+                                <Text>
+                                    @breakdown.RoommateName
+                                </Text>
+                            </Field>
+                            <Field>
+                                <FieldLabel>Whole amount</FieldLabel>
+                                <NumericEdit @bind-Value="@breakdown.Share" Placeholder="Share">
+                                    <Feedback>
+                                        <ValidationSuccess>Share is good.</ValidationSuccess>
+                                        <ValidationError>Enter share</ValidationError>
+                                    </Feedback>
+                                </NumericEdit>
+                            </Field>
+                            <Field>
+                                <Check TValue="bool" Checked="@breakdown.IsPaid">Paid</Check>
+                            </Field>
+                        </Row>
+                    }
+                }
+                else
+                {
+                    @foreach (var roommate in RoommatesParts)
+                    {
+                        <Row>
+                            <Column>
+                                <Field>
+                                    <FieldLabel>Name</FieldLabel>
+                                    <FieldBody>
+                                        <p>@roommate.RoommateName</p>
+                                    </FieldBody>
+                                </Field>
+                            </Column>
+                            <Column>
+                                <Field>
+                                    <FieldLabel>Share</FieldLabel>
+                                    <FieldBody>
+                                        <NumericEdit @bind-Value="@roommate.Share" Placeholder="Share">
+                                            <Feedback>
+                                                <ValidationSuccess>Share is good.</ValidationSuccess>
+                                                <ValidationError>Enter share</ValidationError>
+                                            </Feedback>
+                                        </NumericEdit>
+                                    </FieldBody>
+                                </Field>
+                            </Column>
+                            <Column>
+                                <Field>
+                                    <FieldLabel>Paid</FieldLabel>
+                                    <FieldBody>
+                                        <Row>
+                                            <Check TValue="bool" Checked="@roommate.IsPaid"></Check>
+                                        </Row>
+                                    </FieldBody>
+                                </Field>
+                            </Column>
+                        </Row>
+                    }
+                }
+            }
+            <Blazorise.Button Clicked="@SubmitForm" Type="ButtonType.Submit" PreventDefaultOnSubmit Color="Color.Primary">Submit</Blazorise.Button>
+            <Blazorise.Button Color="Color.Danger" Clicked="@Cancel">Cancel</Blazorise.Button>
+        </Blazorise.CardBody>
+    </Blazorise.Card>
+</Div>
+
+
+
+@code {
+    [SupplyParameterFromForm] protected AddRentRequest RentForm { get; set; } = null!;
+    [Parameter] public long ApartmentId { get; set; }
+    [Parameter] public long RentId { get; set; }
+    [SupplyParameterFromForm] IList<RoommatePart> RoommatesParts { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        RentForm ??= new();
+        RoommatesParts ??= new List<RoommatePart>();
+        InitizalizeRoommatesParts();
+    }
+
+    void InitizalizeRoommatesParts()
+    {
+        var list = GetRoommates(ApartmentId);
+        foreach (var roommate in list)
+        {
+            RoommatesParts.Add(new RoommatePart()
+            {
+                RoommateName = roommate.Name,
+                UserId = roommate.UserId
+            });
+        }
+    }
+    void OnRememberMeChanged( bool value )
+    {
+        RentForm.CustomBreakdown = value;
+    }
+    private async Task SubmitForm()
+    {
+        var roommates = GetRoommates(ApartmentId);
+        if (RentId != 0)
+        {
+            await RentServices.UpdateRent(ApartmentId, RentForm, roommates,RentId);
+        }
+        else
+        {
+            RentForm.CustomCostBreakDown = RoommatesParts;
+            await RentServices.AddRent(ApartmentId, roommates, RentForm);
+        }
+
+        Cancel();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (RentId != 0)
+        {
+            var rent = RentServices.GetRent(RentId, ApartmentId);
+            var addChoreRequest = new AddRentRequest()
+            {
+                CustomCostBreakDown = rent.CustomCostBreakDown,
+                DeadLine = rent.DeadLine,
+                EndDate = rent.EndDate,
+                CustomBreakdown = rent.CustomBreakdown,
+                Month = rent.Month,
+                EvenBreakDown = rent.EvenBreakDown,
+                Year = rent.Year
+            };
+            RentForm = addChoreRequest;
+        }
+        RentForm.DeadLine = new DateOnly(DateTimeOffset.Now.Year,DateTimeOffset.Now.Month,DateTimeOffset.Now.Day);
+        RentForm.Year = DateTimeOffset.Now.Year.ToString();
+
+    }
+    IList<Roommate> GetRoommates(long apartmentId)
+    {
+        return RoommateServices.GetRoommates(apartmentId);
+    }
+
+    void Cancel()
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/rents");
+    }
+    List<string> Mounths = new List<string>()
+    {
+        "Month",
+        "January", 
+        "February", 
+        "March",
+        "April", 
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+    };
+}

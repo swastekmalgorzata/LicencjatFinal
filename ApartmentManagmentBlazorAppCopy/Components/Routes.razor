@@ -1,0 +1,32 @@
+﻿@using ApartmentManagmentBlazorAppCopy.Components.Account.Shared
+<Blazorise.ThemeProvider Theme="@theme">
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    <RedirectToLogin/>
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="routeData" Selector="h1"/>
+        </Found>
+    </Router>
+</Blazorise.ThemeProvider>
+
+@code{
+    private Theme theme = new Theme
+    {
+        ColorOptions = new ThemeColorOptions
+        {
+            Primary = "#F0B67F",
+            Secondary = "#D6D1B1",
+            Danger = "#FE5F55",
+        },
+        BackgroundOptions = new ThemeBackgroundOptions
+        {
+            Body = "#EEF5DB",
+            Primary = "#F0B67F",
+            Secondary = "#D6D1B1",
+            Danger = "#FE5F55",
+        }
+    };
+}

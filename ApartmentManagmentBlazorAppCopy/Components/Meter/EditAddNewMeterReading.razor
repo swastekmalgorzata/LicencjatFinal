@@ -1,0 +1,116 @@
+@page "/{apartmentId:long}/addNewMeterReading"
+@page "/{apartmentId:long}/editNewMeterReading/{meterReadId:long}"
+@using ApartmentManagmentBlazorAppCopy.Requests.ApartmentRequests
+@using ApartmentManagmentBlazorAppCopy.Services
+@inject IMeterServices MeterServices
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<link href="css/formDispaly.css" rel="stylesheet" />
+
+<Div Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    
+    <Blazorise.Card Background="Background.Body" Class="infobox">
+        <Blazorise.CardTitle Size = "3">
+            @if (MeterReadId != 0)
+            { 
+                <Text>Edit reading</Text>
+            }
+            else
+            {
+                <Text>Add reading</Text>
+            }
+        </Blazorise.CardTitle>
+        <Blazorise.CardBody>
+            <Validation Validator="ValidationRule.IsNotEmpty">
+                <Field>
+                    <FieldLabel>Month</FieldLabel>
+                    <Select @bind-SelectedValue="@MeterReadingForm.Month">
+                        @foreach (var month in Mounths)
+                        {
+                            <SelectItem value="@month"> @month </SelectItem>
+                        }
+                    </Select>
+                </Field>
+            </Validation>
+            <Field>
+                <FieldLabel>Water reading</FieldLabel>
+                <NumericEdit @bind-Value="@MeterReadingForm.WaterReading">
+                </NumericEdit>
+            </Field>
+            <Field>
+                <FieldLabel>Gas reading</FieldLabel>
+                <NumericEdit @bind-Value="@MeterReadingForm.GasReading">
+                </NumericEdit>
+            </Field>
+            <Field>
+                <FieldLabel>Energy reading</FieldLabel>
+                <NumericEdit @bind-Value="@MeterReadingForm.EnergyReading">
+                </NumericEdit>
+            </Field>
+            <Blazorise.Button Clicked="@SubmitForm" Type="ButtonType.Submit" PreventDefaultOnSubmit Color="Color.Primary">Submit</Blazorise.Button>
+            <Blazorise.Button Color="Color.Danger" Clicked="@Cancel">Cancel</Blazorise.Button>
+        </Blazorise.CardBody>
+    </Blazorise.Card>
+</Div>
+
+@code {
+    [SupplyParameterFromForm]
+    protected AddMeterRequest MeterReadingForm { get; set; } = null!;
+    [Parameter] 
+    public long ApartmentId { get; set; }
+    [Parameter]
+    public long MeterReadId { get; set; }
+    
+    protected override void OnInitialized() => MeterReadingForm ??= new();
+
+    private async Task SubmitForm()
+    {
+        if (MeterReadId != 0)
+        {
+            await MeterServices.UpdateMeter(ApartmentId, MeterReadId, MeterReadingForm);
+        }
+        else
+        {
+            await MeterServices.AddMeter(ApartmentId, MeterReadingForm);
+        }
+        Cancel();
+    }
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        if (MeterReadId != 0)
+        {
+            var meter = await MeterServices.GetMeter(MeterReadId, ApartmentId);
+            var addMeterRequest = new AddMeterRequest()
+            {
+                WaterReading = meter.WaterReading,
+                EnergyReading = meter.EnrgyReading,
+                GasReading = meter.GasReading,
+                Month = meter.Month
+            };
+            MeterReadingForm = addMeterRequest;
+        }
+    }
+    
+    void Cancel()
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/meterReadings");
+    }
+    List<string> Mounths = new List<string>()
+    {
+        "Month",
+        "January", 
+        "February", 
+        "March",
+        "April", 
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+    };
+}

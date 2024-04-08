@@ -1,0 +1,12 @@
+.main-container {
+    display: flex;
+    min-height: 100vh;
+}
+.nav-container {
+    background-color: #F0B67F;
+    width: fit-content;
+}
+.content-container {
+    width: 100%;
+}
+

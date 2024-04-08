@@ -1,0 +1,132 @@
+﻿@using ApartmentManagmentBlazorAppCopy.Services
+@using System.Security.Claims
+@implements IDisposable
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject IRommateServices RoommateServices
+<link href="css/MainLayout/NavBar.css" rel="stylesheet" />
+
+<div class="nav-menu">
+    
+    <div class="nav-menu-header">
+        <text class="tittle-nav">Hello @userName!</text>
+    </div>
+
+    <input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
+
+    <div onclick="document.querySelector('.navbar-toggler').click()">
+        <nav>
+            <AuthorizeView>
+                <Authorized>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="@($"{apartmentId}/dashboard")">
+                            <span aria-hidden="true">Dashboard</span>
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="Account/Manage">
+                            <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <form action="Account/Logout" method="post">
+                            <AntiforgeryToken/>
+                            <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
+                            <button type="submit" class="nav-link">
+                                <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                            </button>
+                        </form>
+                    </div>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="@($"{apartmentId}/chores")">
+                            <span aria-hidden="true">Chores</span>
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="@($"{apartmentId}/rents")">
+                            <span aria-hidden="true">Rents</span>
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="@($"{apartmentId}/meterReadings")">
+                            <span aria-hidden="true">Meters</span>
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="@($"{apartmentId}/costs")">
+                            <span aria-hidden="true">Bills</span>
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="@($"{apartmentId}/purchases")">
+                            <span aria-hidden="true">Purchases</span>
+                        </NavLink>
+                    </div>
+                      <div class="nav-item">
+                            <NavLink class="nav-link" href="@($"/apartment")">
+                                <span class="nav-link" aria-hidden="true">Apartment info</span> 
+                            </NavLink>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <NavLink class="nav-link px-4" href="Account/Register">
+                                <span class="bi bi-person-nav-menu " aria-hidden="true"></span>
+                                Register
+                            </NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link px-4" href="Account/Login">
+                                <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span>
+                                Login
+                            </NavLink>
+                        </li>
+                    </ul>
+                </NotAuthorized>
+            </AuthorizeView>
+        </nav>
+    </div>
+</div>
+
+@code {
+    private string? currentUrl;
+    private long? apartmentId;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await GetUserIdFromClaims();
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+        if (userId is not null)
+        {
+            apartmentId = RoommateServices.GetUserApartmentId(userId!);
+        }
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+    private string? userId;
+    private string? userName;
+    private async Task GetUserIdFromClaims()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            userName = user.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
+            userId = user.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+            
+        }
+    }
+}

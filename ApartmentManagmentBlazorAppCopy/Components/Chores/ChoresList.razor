@@ -1,0 +1,117 @@
+@page "/{apartmentId:long}/chores"
+@using ApartmentManagmentBlazorAppCopy.Services
+@using ApartmentManagmentBlazorAppCopy.Models
+@using Microsoft.AspNetCore.Authorization
+@inject IChoresService ChoreServices
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IRommateServices RommateServices
+@rendermode InteractiveServer
+@attribute [Authorize]
+<link href="css/formDispaly.css" rel="stylesheet" xmlns="http://www.w3.org/1999/html"/>
+
+<Card Background="Background.Body" Class="infobox" Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    <h3>Chores</h3>
+    <Div>
+        <Table Hoverable>
+            <TableHeader>
+                <TableRow>
+                    <TableHeaderCell>Chore name</TableHeaderCell>
+                    <TableHeaderCell>Doer</TableHeaderCell>
+                    <TableHeaderCell>Completed</TableHeaderCell>
+                    <TableHeaderCell>Edit</TableHeaderCell>
+                    <TableHeaderCell>Delete</TableHeaderCell>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                @foreach (var chore in Chores)
+                {
+                    <TableRow>
+                        <TableRowCell>@chore.ChoreName</TableRowCell>
+                        <TableRowCell>@GetUserName(@chore.UserId)</TableRowCell>
+                        <TableRowCell>
+                            <Field>
+                                <Check TValue="bool" CheckedChanged="@(() => MarkChore(chore.Id, chore.IsDone, chore.UserId))"
+                                       Checked="@chore.IsDone"></Check>
+                            </Field>
+                        </TableRowCell>
+                        <TableRowCell>
+                            <Button Clicked="@(() => EditChore(chore.Id))" Color="Color.Primary">Edit</Button>
+                        </TableRowCell>
+                        <TableRowCell>
+                            <Button Clicked="@(() => DeleteChore(chore.Id))" Color="Color.Danger">Delete</Button>
+                        </TableRowCell>
+                    </TableRow>
+                }
+            </TableBody>
+        </Table>
+    </Div>
+        <Button @onclick="AddNewChore" Color="Color.Primary">Add New Chore</Button>
+</Card>
+
+@code {
+    [Parameter] public long ApartmentId { get; set; }
+    private IList<Chore>? Chores;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            Chores = GetChoresFromService();
+        }
+        catch (Exception ex)
+        {
+            // Handle exception, e.g., display an error message
+        }
+    }
+
+    private IList<Chore>? GetChoresFromService()
+    {
+        return ChoreServices.GetChores(ApartmentId);
+    }
+
+    void EditChore(long choreId)
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/editAddChore/{choreId}");
+    }
+    
+    private async Task DeleteChore(long choreId)
+    {
+        await ChoreServices.DeleteChore(ApartmentId, choreId);
+        NavigationManager.NavigateTo($"{ApartmentId}/chores");
+
+    }
+
+    void AddNewChore()
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/editAddChore");
+    }
+
+    public async Task MarkChore(long choreId, bool isDone, string? userId)
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            var _claims = user.Claims;
+            var id = _claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")!.Value;
+            userId = id;
+        }
+
+        if (!isDone is false)
+        {
+            userId = null;
+            
+        }
+        await ChoreServices.MarkChore(choreId, !isDone, userId);
+    }
+    private string GetUserName(string? userId)
+    {
+        if (userId is null)
+        {
+            return "-";
+        }
+        return RommateServices.GetUserApllicationInfo(userId!).UserName!;
+    }
+}

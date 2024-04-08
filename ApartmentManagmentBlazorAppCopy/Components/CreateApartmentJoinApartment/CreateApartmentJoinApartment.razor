@@ -1,0 +1,38 @@
+@page "/createJoinApartment"
+@using ApartmentManagmentBlazorAppCopy.Services
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+
+
+<Div Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    <Row>
+        <Column>
+            <h3>Create or join an apartment</h3>
+        </Column>
+    </Row>
+    <Row HorizontalGutter="32" VerticalGutter="16">
+        <Column ColumnSize="ColumnSize.Is6">
+               <Button Color="Color.Primary" Clicked ="CreateApartment">Create new apartment</Button>
+
+        </Column>
+        <Column ColumnSize="ColumnSize.Is6">
+            <Button Color="Color.Primary" Clicked="JoinApartment">Join apartment</Button>
+        </Column>
+    </Row>
+</Div>
+
+@code {
+
+    void CreateApartment()
+    {
+        NavigationManager.NavigateTo("/createApartment");
+    }
+    
+    void JoinApartment()
+    {
+        NavigationManager.NavigateTo("/joinApartment");
+    }
+}

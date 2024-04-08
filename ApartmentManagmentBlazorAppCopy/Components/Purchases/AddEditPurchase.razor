@@ -1,0 +1,103 @@
+@page "/{apartmentId:long}/addNewPurchases"
+@page "/{apartmentId:long}/addNewPurchases/{PurchaseID:long}"
+@using ApartmentManagmentBlazorAppCopy.Requests.ApartmentRequests
+@using ApartmentManagmentBlazorAppCopy.Services
+@using ApartmentManagmentBlazorAppCopy.Models
+@inject IPurchaseServices PurchaseServices
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<Div Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    
+    <Blazorise.Card Background="Background.Body" Class="infobox">
+        <Blazorise.CardTitle Size = "3">
+            @if (PurchaseID != 0)
+            {
+                <Text>Add new purchase</Text>
+            }
+            else
+            {
+                <Text>Edit purchase</Text>
+            }
+        </Blazorise.CardTitle>
+        <Blazorise.CardBody>
+        <Validation Validator="ValidationRule.IsNotEmpty">
+        <Field>
+            <FieldLabel>Name</FieldLabel>
+            <TextEdit @bind-Text="@PurchaseForm.ItemName" Placeholder="Name">
+                <Feedback>
+                    <ValidationSuccess>Name is good.</ValidationSuccess>
+                    <ValidationError>Enter name</ValidationError>
+                </Feedback>
+            </TextEdit>
+        </Field>
+        </Validation>
+            <Validation Validator="ValidationRule.IsNotEmpty">
+                <Field>
+                    <FieldLabel>Cost</FieldLabel>
+                    <NumericEdit @bind-Value="@PurchaseForm.Cost" Placeholder="Cost">
+                        <Feedback>
+                            <ValidationSuccess>Amount is good.</ValidationSuccess>
+                            <ValidationError>Enter amount</ValidationError>
+                        </Feedback>
+                    </NumericEdit>
+                </Field>
+            </Validation>
+            <Field>
+                <Check TValue="bool" Checked="@PurchaseForm.IsBought" CheckedChanged="@OnRememberMeChanged">Bought</Check>
+            </Field>
+            <Blazorise.Button Clicked="@SubmitForm" Type="ButtonType.Submit" PreventDefaultOnSubmit Color="Color.Primary">Submit</Blazorise.Button>
+            <Blazorise.Button Color="Color.Danger" Clicked="@Cancel">Cancel</Blazorise.Button>
+        </Blazorise.CardBody>
+    </Blazorise.Card>
+</Div>
+
+@code {
+    [SupplyParameterFromForm]
+    protected PurchaseRecord PurchaseForm { get; set; } = null!;
+    [Parameter] 
+    public long ApartmentId { get; set; }
+    [Parameter]
+    public long PurchaseID { get; set; }
+    
+    protected override void OnInitialized() => PurchaseForm ??= new();
+
+    private async Task SubmitForm()
+    {
+        if (PurchaseID != 0)
+        {
+            await PurchaseServices.UpdatePurchase(ApartmentId, PurchaseForm,PurchaseID );
+        }
+        else
+        {
+            PurchaseForm.ApartmentId = ApartmentId;
+            await PurchaseServices.AddPurchase(PurchaseForm);
+        }
+        Cancel();
+    }
+    void OnRememberMeChanged( bool value )
+    {
+        PurchaseForm.IsBought = value;
+    }
+    protected override async Task OnParametersSetAsync()
+    {
+        if (PurchaseID != 0)
+        {
+            var purchaseRecord = PurchaseServices.GetPurchaseRecord(PurchaseID, ApartmentId);
+            var purchase = new PurchaseRecord()
+            {
+               ItemName = purchaseRecord.ItemName,
+               Cost = purchaseRecord.Cost,
+               IsBought = purchaseRecord.IsBought,
+               UserId = purchaseRecord.UserId
+            };
+            PurchaseForm = purchase;
+        }
+    }
+    
+    void Cancel()
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/purchases");
+    }
+    
+}

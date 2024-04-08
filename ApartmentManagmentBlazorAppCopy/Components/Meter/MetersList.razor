@@ -1,0 +1,84 @@
+﻿@page "/{apartmentId:long}/meterReadings"
+@using ApartmentManagmentBlazorAppCopy.Services
+@using ApartmentManagmentBlazorAppCopy.Models
+@inject IMeterServices MeterServices
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<link href="css/formDispaly.css" rel="stylesheet" />
+
+<Card Background="Background.Body" Class="infobox" Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    <h3>Meters readings</h3>
+    <Div>
+        <Table Hoverable>
+            <TableHeader>
+                <TableRow>
+                    <TableHeaderCell>Month</TableHeaderCell>
+                    <TableHeaderCell>Gas / m³</TableHeaderCell>
+                    <TableHeaderCell>Water / m³</TableHeaderCell>
+                    <TableHeaderCell>Energy / kWh</TableHeaderCell>
+                    <TableHeaderCell>Edit</TableHeaderCell>
+                    <TableHeaderCell>Delete</TableHeaderCell>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                @foreach (var meter in Meters)
+                {
+                    <TableRow>
+                        <TableRowCell>@meter.Month</TableRowCell>
+                        <TableRowCell>@meter.GasReading</TableRowCell>
+                        <TableRowCell>@meter.WaterReading</TableRowCell>
+                        <TableRowCell>@meter.EnrgyReading</TableRowCell>
+                        <TableRowCell>
+                            <Button Clicked="@(() => EditMeter(meter.Id))" Color="Color.Primary">Edit</Button>
+                        </TableRowCell>
+                        <TableRowCell>
+                            <Button Clicked="@(() => DeleteMeter(meter.Id))" Color="Color.Danger">Delete</Button>
+                        </TableRowCell>
+                    </TableRow>
+                }
+            </TableBody>
+        </Table>
+    </Div>
+    <Button Clicked="@AddNewMeter" Color="Color.Primary">Add new meter reading</Button>
+</Card>
+
+@code {
+    [Parameter]
+    public long ApartmentId { get; set; }
+    private IList<Meter> Meters;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            Meters = GetMetersFromService(); 
+        }
+        catch (Exception ex)
+        {
+            // Handle exception, e.g., display an error message
+        }
+    }
+    
+    private IList<Meter> GetMetersFromService()
+    {
+        return MeterServices.GetMeters(ApartmentId);
+    }
+
+    void EditMeter(long meterId)
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/editNewMeterReading/{meterId}");
+    }
+    
+    private async Task DeleteMeter(long meterId)
+    {
+        await MeterServices.DeleteMeter(ApartmentId, meterId);
+        NavigationManager.NavigateTo($"{ApartmentId}/meterReadings");
+        
+    }
+    
+    void AddNewMeter()
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/addNewMeterReading");
+    }
+}

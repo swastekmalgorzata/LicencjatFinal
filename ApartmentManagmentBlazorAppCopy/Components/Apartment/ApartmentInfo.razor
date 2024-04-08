@@ -1,0 +1,60 @@
+@using ApartmentManagmentBlazorAppCopy.Services
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager NavigationManager
+@inject IRommateServices RommateServices
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+@page "/apartment"
+
+<link href="css/formDispaly.css" rel="stylesheet" xmlns="http://www.w3.org/1999/html"/>
+
+<Card Background="Background.Body" Class="infobox" Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    <h3>Apartment info</h3>
+    <Div>
+        @if (ApartmentId is not null)
+        {
+            <Row>
+                <Text>Apartment ID : @ApartmentId</Text>
+            </Row>
+            <Row>
+                <Button Color="Color.Primary" Clicked="@LeaveApartment">Leave apartment</Button>
+            </Row>
+        }
+        else
+        {
+            <Button Color="Color.Primary" Clicked="@JoinApartment">Join apartment</Button>
+        }
+    </Div>
+</Card>
+
+@code {
+    public string userId;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync().ConfigureAwait(false);
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            var _claims = user.Claims;
+            var id = _claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")!.Value;
+            userId = id;
+        }
+        ApartmentId = RommateServices.GetUserApartmentId(userId);
+
+    }
+
+    public async Task LeaveApartment()
+    {
+        await RommateServices.DeleteRommate(ApartmentId!.Value, userId);
+        NavigationManager.NavigateTo("/createJoinApartment");
+    }
+    void JoinApartment()
+    {
+        NavigationManager.NavigateTo("/createJoinApartment");
+    }
+
+    private long? ApartmentId;
+}

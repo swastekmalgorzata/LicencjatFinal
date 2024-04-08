@@ -1,0 +1,76 @@
+@page "/createApartment"
+@using ApartmentManagmentBlazorAppCopy.Services
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+@inject IApartmentServices ApartmentServices
+@inject IRommateServices RommateServices
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize]
+
+
+<Div Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    <Row>
+        <Column>
+            <h3>Create an apartment</h3>
+        </Column>
+    </Row>
+    <Row>
+        <Column>
+            <Validation Validator="ValidationRule.IsNotEmpty">
+            <Field>
+                <FieldLabel>Apartment name</FieldLabel>
+                <TextEdit @bind-Text="@ApartmentName" Placeholder="Chore name">
+                    <Feedback>
+                        <ValidationSuccess>Name is good.</ValidationSuccess>
+                        <ValidationError>Enter name</ValidationError>
+                    </Feedback>
+                </TextEdit>
+            </Field>
+            </Validation>
+        </Column>
+    </Row>
+    <Row HorizontalGutter="32" VerticalGutter="16">
+        <Column ColumnSize="ColumnSize.Is6">
+            <Button Color="Color.Primary" Clicked="@CreateApartment">Create</Button>
+        </Column>
+        <Column ColumnSize="ColumnSize.Is6">
+            <Button Color="Color.Danger" Clicked="@Cancel">Cancel</Button>
+        </Column>
+    </Row>
+</Div>
+
+@code {
+    [SupplyParameterFromForm]
+    private string ApartmentName { get; set; }= null!;
+    
+    protected override void OnInitialized() => ApartmentName ??= "";
+
+    async Task CreateApartment()
+    {
+        await GetClaimsPrincipalData();
+        var apartmentId = await ApartmentServices.AddApartment(ApartmentName);
+        await RommateServices.AddRommate(apartmentId, _claims);
+        NavigationManager.NavigateTo(@"/apartment");
+    }
+    
+    void Cancel()
+    {
+        NavigationManager.NavigateTo($"/apartment");
+    }
+    
+    private IEnumerable<Claim> _claims = Enumerable.Empty<Claim>();
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            _claims = user.Claims;
+        }
+    }
+}
+

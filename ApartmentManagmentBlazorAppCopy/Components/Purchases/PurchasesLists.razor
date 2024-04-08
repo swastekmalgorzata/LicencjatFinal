@@ -1,0 +1,121 @@
+@page "/{apartmentId:long}/purchases"
+@using ApartmentManagmentBlazorAppCopy.Services
+@using ApartmentManagmentBlazorAppCopy.Models
+@using Microsoft.AspNetCore.Authorization
+@inject IPurchaseServices PurchaseServices
+@inject NavigationManager NavigationManager
+@inject IRommateServices RommateServices
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<link href="css/formDispaly.css" rel="stylesheet" xmlns="http://www.w3.org/1999/html"/>
+
+<Card Background="Background.Body" Class="infobox" Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    <h3>Purchases</h3>
+    <Div>
+        <Table Hoverable>
+            <TableHeader>
+                <TableRow>
+                    <TableHeaderCell>Name</TableHeaderCell>
+                    <TableHeaderCell>Cost</TableHeaderCell>
+                    <TableHeaderCell>Buyer</TableHeaderCell>
+                    <TableHeaderCell>Bought</TableHeaderCell>
+                    <TableHeaderCell>Edit</TableHeaderCell>
+                    <TableHeaderCell>Delete</TableHeaderCell>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                @foreach (var purchase in Purchases)
+                {
+                    <TableRow>
+                        <TableRowCell>@purchase.ItemName</TableRowCell>
+                        <TableRowCell>@purchase.Cost</TableRowCell>
+                        <TableRowCell>@GetUserName(@purchase.UserId)</TableRowCell>
+                        <TableRowCell>
+                            <Field>
+                                <Check TValue="bool" CheckedChanged="@(() => MarkItemBought(@purchase.Id, @purchase.IsBought, purchase.UserId))" Checked="@purchase.IsBought"></Check>
+                            </Field>
+                        </TableRowCell>
+                        <TableRowCell>
+                            <Button Clicked="@(() => EditPurchase(purchase.Id))" Color="Color.Primary">Edit</Button>
+                        </TableRowCell>
+                        <TableRowCell>
+                            <Button Clicked="@(() => DeletePurchase(purchase.Id))" Color="Color.Danger">Delete</Button>
+                        </TableRowCell>
+                    </TableRow>
+                }
+            </TableBody>
+        </Table>
+    </Div>
+    <Button Clicked="@AddNewPurchase" Color="Color.Primary">Add new rent</Button>
+</Card>
+
+@code {
+    [Parameter] public long ApartmentId { get; set; }
+    private IList<PurchaseRecord>? Purchases;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            Purchases = GetPurchaseFromService();
+        }
+        catch (Exception ex)
+        {
+            // Handle exception, e.g., display an error message
+        }
+    }
+    private IList<PurchaseRecord>? GetPurchaseFromService()
+    {
+        return PurchaseServices.GetPurchaseRecords(ApartmentId);
+    }
+
+    void EditPurchase(long purchaseId)
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/addNewPurchases/{purchaseId}");
+    }
+
+    private async Task DeletePurchase(long purchaseId)
+    {
+        await PurchaseServices.DletePurchase(ApartmentId, purchaseId);
+        NavigationManager.NavigateTo($"{ApartmentId}/purchases");
+
+    }
+
+    void AddNewPurchase()
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/addNewPurchases");
+    }
+
+    private async Task MarkItemBought(long purchaseId, bool isBought, string? userId)
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            var _claims = user.Claims;
+            var id = _claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")!.Value;
+            userId = id;
+        }
+
+        if (!isBought is false)
+        {
+            userId = null;
+            
+        }
+        await PurchaseServices.MarkItemBought(purchaseId, !isBought, userId);
+        NavigationManager.NavigateTo($"{ApartmentId}/purchases");
+
+    }
+
+    private string GetUserName(string? userId)
+    {
+        if (userId is null)
+        {
+            return "-";
+        }
+        return RommateServices.GetUserApllicationInfo(userId!).UserName!;
+    }
+}

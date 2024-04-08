@@ -1,0 +1,78 @@
+﻿@page "/Account/Manage"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using ApartmentManagmentBlazorAppCopy.Data
+@using ApartmentManagmentBlazorAppCopy.Services
+@inject NavigationManager NavigationManager
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityUserAccessor UserAccessor
+@inject IdentityRedirectManager RedirectManager
+@inject IRommateServices RommateServices
+
+<link href="css/formDispaly.css" rel="stylesheet" />
+
+<PageTitle>Profile</PageTitle>
+
+<h3>Profile</h3>
+<StatusMessage/>
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
+
+            <div class="form-floating mb-3">
+                <label for="username" class="form-label">Username</label>
+                <InputText type="text" @bind-Value="Input.Name" class="form-control" placeholder="Please choose your username."/>
+                <ValidationMessage For="() => Input.Name" class="text-danger"/>
+            </div>
+
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private ApplicationUser user = default!;
+    private string? username;
+
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm] private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        username = await UserManager.GetUserNameAsync(user);
+
+        Input.Name ??= username;
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        if (Input.Name != username)
+        {
+            var setUserNameAsync = await UserManager.SetUserNameAsync(user, Input.Name);
+            var apartmentId = RommateServices.GetUserApartmentId(user.Id);
+            
+            if (apartmentId is not null && Input.Name is not null)
+            {
+                await RommateServices.ChangeRommateName(apartmentId.Value, user.Id, Input.Name);
+            }
+            
+            if (!setUserNameAsync.Succeeded)
+            {
+                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set user name.", HttpContext);
+            }
+        }
+
+        await SignInManager.RefreshSignInAsync(user);
+        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+    }
+
+    private sealed class InputModel
+    {
+        public string? Name { get; set; }
+    }
+}

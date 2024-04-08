@@ -1,0 +1,73 @@
+@page "/joinApartment"
+@using ApartmentManagmentBlazorAppCopy.Services
+@using System.Security.Claims
+@using ApartmentManagmentBlazorAppCopy.Requests.ApartmentRequests
+@using Microsoft.AspNetCore.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject IRommateServices RommateServices
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<Div Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle">
+    <Row>
+        <Column>
+            <h3>Join apartment</h3>
+        </Column>
+    </Row>
+    <Row>
+        <Column>
+            <Validation Validator="ValidationRule.IsNotEmpty">
+                <Field>
+                    <FieldLabel>Apartment ID</FieldLabel>
+                    <NumericEdit @bind-Value="@JoinApartmentReq.ApartmentId" Placeholder="ID">
+                        <Feedback>
+                            <ValidationError>Enter ID</ValidationError>
+                        </Feedback>
+                    </NumericEdit>
+                </Field>
+            </Validation>
+        </Column>
+    </Row>
+    <Row HorizontalGutter="32" VerticalGutter="16">
+        <Column ColumnSize="ColumnSize.Is6">
+            <Button Color="Color.Primary" Clicked="@SubmitForm">Join</Button>
+        </Column>
+        <Column ColumnSize="ColumnSize.Is6">
+            <Button Color="Color.Danger" Clicked="@Cancel">Cancel</Button>
+        </Column>
+    </Row>
+</Div>
+
+@code {
+    [SupplyParameterFromForm]
+    private JoinApartmentRequest JoinApartmentReq { get; set; }= null!;
+    
+    protected override void OnInitialized() => JoinApartmentReq ??= new();
+    
+    async Task SubmitForm()
+    {
+        await GetClaimsPrincipalData();
+        await RommateServices.AddRommate(JoinApartmentReq.ApartmentId,claims);
+        NavigationManager.NavigateTo($"/apartment");
+
+    }
+    
+    void Cancel()
+    {
+        NavigationManager.NavigateTo($"/createJoinApartment");
+    }
+    
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            claims = user.Claims;
+        }
+    }
+}

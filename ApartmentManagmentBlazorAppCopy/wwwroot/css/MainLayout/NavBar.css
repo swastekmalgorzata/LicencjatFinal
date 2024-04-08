@@ -1,0 +1,24 @@
+.nav-menu {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.nav-menu-header {
+    color: blueviolet;
+    display: flex;
+    justify-content: center;
+    align-content: center;
+}
+
+
+.nav-menu-item {
+    color: white;
+}
+
+.nav-link {
+    display: flex;
+    justify-content: center;
+    align-content: center;
+}

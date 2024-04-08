@@ -1,0 +1,120 @@
+@page "/{apartmentId:long}/editAddChore"
+@page "/{apartmentId:long}/editAddChore/{choreReadId:long}"
+@using ApartmentManagmentBlazorAppCopy.Services
+@using ApartmentManagmentBlazorAppCopy.Models
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Build.Framework
+@using ButtonType = Blazorise.ButtonType
+@inject IChoresService ChoreServices
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@attribute [Authorize]
+
+<link href="css/formDispaly.css" rel="stylesheet" />
+
+<Div  Position="Position.Absolute.Top.Is50.Start.Is50.Translate.Middle" >
+    
+<Blazorise.Card Background="Background.Body" Class="infobox">
+    <Blazorise.CardTitle Size = "3">
+       @if (ChoreReadId != 0)
+        {
+            <Blazorise.Text>
+            Edit chore
+            </Blazorise.Text>
+       
+        }
+        else
+        {
+            <Blazorise.Text>
+                Add chore
+            </Blazorise.Text>
+       
+        }
+    </Blazorise.CardTitle>
+    <Blazorise.CardBody>
+        <Form>
+            <Fields>
+                <Validation Validator="ValidationRule.IsNotEmpty">
+                <Field>
+                    <FieldLabel>Name</FieldLabel>
+                    <TextEdit @bind-Text="@ChoreReadingForm.ChoreName" Placeholder="Chore name">
+                        <Feedback>
+                            <ValidationSuccess>Name is good.</ValidationSuccess>
+                            <ValidationError>Enter name</ValidationError>
+                        </Feedback>
+                    </TextEdit>
+                </Field>
+                </Validation>
+            </Fields>
+            <Blazorise.Button Clicked="@SubmitForm" Type="ButtonType.Submit" PreventDefaultOnSubmit Color="Color.Primary">Submit</Blazorise.Button>
+            <Blazorise.Button Color="Color.Danger" Clicked="@Cancel">Cancel</Blazorise.Button>
+        </Form>
+    </Blazorise.CardBody>
+</Blazorise.Card>
+</Div>
+
+
+@code {
+    protected Chore ChoreReadingForm { get; set; } = null!;
+    [Parameter]
+    public long ApartmentId { get; set; }
+    [Parameter]
+    public long ChoreReadId { get; set; }
+    [SupplyParameterFromForm]
+    protected Input InputChore { get; set; }
+    protected override void OnInitialized()
+    {
+        ChoreReadingForm ??= new();
+        InputChore ??= new();
+    }
+
+    private async Task SubmitForm()
+    {
+            if (ChoreReadId != 0)
+            {
+                await ChoreServices.UpdateChore(ChoreReadingForm, ChoreReadId, ApartmentId);
+            }
+            else
+            {
+                await ChoreServices.AddChore(ChoreReadingForm, ApartmentId);
+            }
+            Cancel();
+
+    }
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ChoreReadId != 0)
+        {
+            await GetClaimsPrincipalData();
+            var chore = ChoreServices.GetChore(ChoreReadId, ApartmentId);
+
+            ChoreReadingForm = chore;
+        }
+    }
+    private IEnumerable<Claim> _claims = Enumerable.Empty<Claim>();
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            _claims = user.Claims;
+        }
+    }
+    void Cancel()
+    {
+        NavigationManager.NavigateTo($"{ApartmentId}/chores");
+    }
+
+    public class Input
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Name is required" )]
+        public string Name { get; set; }
+    }
+}
