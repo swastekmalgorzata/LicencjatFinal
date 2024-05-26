@@ -40,7 +40,7 @@
                 <Validation Validator="ValidationRule.IsNotEmpty">
                 <Field>
                     <FieldLabel>Name</FieldLabel>
-                    <TextEdit @bind-Text="@ChoreReadingForm.ChoreName" Placeholder="Chore name">
+                    <TextEdit ElementId="ChoreName" @bind-Text="@ChoreReadingForm.ChoreName" Placeholder="Chore name">
                         <Feedback>
                             <ValidationSuccess>Name is good.</ValidationSuccess>
                             <ValidationError>Enter name</ValidationError>
@@ -49,7 +49,7 @@
                 </Field>
                 </Validation>
             </Fields>
-            <Blazorise.Button Clicked="@SubmitForm" Type="ButtonType.Submit" PreventDefaultOnSubmit Color="Color.Primary">Submit</Blazorise.Button>
+            <Blazorise.Button ElementId="SubmitButton" Clicked="@SubmitForm" Type="ButtonType.Submit" PreventDefaultOnSubmit Color="Color.Primary">Submit</Blazorise.Button>
             <Blazorise.Button Color="Color.Danger" Clicked="@Cancel">Cancel</Blazorise.Button>
         </Form>
     </Blazorise.CardBody>
@@ -58,13 +58,14 @@
 
 
 @code {
-    protected Chore ChoreReadingForm { get; set; } = null!;
+    public Chore ChoreReadingForm { get; set; } = null!;
     [Parameter]
     public long ApartmentId { get; set; }
     [Parameter]
     public long ChoreReadId { get; set; }
     [SupplyParameterFromForm]
-    protected Input InputChore { get; set; }
+    public Input InputChore { get; set; }
+    
     protected override void OnInitialized()
     {
         ChoreReadingForm ??= new();

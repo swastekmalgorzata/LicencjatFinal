@@ -25,7 +25,7 @@
             <Validation Validator="ValidationRule.IsNotEmpty">
                 <Field>
                     <FieldLabel>Month</FieldLabel>
-                    <Select @bind-SelectedValue="@MeterReadingForm.Month">
+                    <Select ElementId="Month" @bind-SelectedValue="@MeterReadingForm.Month">
                         @foreach (var month in Mounths)
                         {
                             <SelectItem value="@month"> @month </SelectItem>
@@ -35,20 +35,20 @@
             </Validation>
             <Field>
                 <FieldLabel>Water reading</FieldLabel>
-                <NumericEdit @bind-Value="@MeterReadingForm.WaterReading">
+                <NumericEdit ElementId="water" @bind-Value="@MeterReadingForm.WaterReading">
                 </NumericEdit>
             </Field>
             <Field>
                 <FieldLabel>Gas reading</FieldLabel>
-                <NumericEdit @bind-Value="@MeterReadingForm.GasReading">
+                <NumericEdit ElementId="gas" @bind-Value="@MeterReadingForm.GasReading">
                 </NumericEdit>
             </Field>
             <Field>
                 <FieldLabel>Energy reading</FieldLabel>
-                <NumericEdit @bind-Value="@MeterReadingForm.EnergyReading">
+                <NumericEdit ElementId="energy" @bind-Value="@MeterReadingForm.EnergyReading">
                 </NumericEdit>
             </Field>
-            <Blazorise.Button Clicked="@SubmitForm" Type="ButtonType.Submit" PreventDefaultOnSubmit Color="Color.Primary">Submit</Blazorise.Button>
+            <Blazorise.Button ElementId="buttonSubmit" Clicked="@SubmitForm" Type="ButtonType.Submit" PreventDefaultOnSubmit Color="Color.Primary">Submit</Blazorise.Button>
             <Blazorise.Button Color="Color.Danger" Clicked="@Cancel">Cancel</Blazorise.Button>
         </Blazorise.CardBody>
     </Blazorise.Card>

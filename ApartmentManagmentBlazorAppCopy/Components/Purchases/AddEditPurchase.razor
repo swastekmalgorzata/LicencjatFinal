@@ -24,7 +24,7 @@
         <Validation Validator="ValidationRule.IsNotEmpty">
         <Field>
             <FieldLabel>Name</FieldLabel>
-            <TextEdit @bind-Text="@PurchaseForm.ItemName" Placeholder="Name">
+            <TextEdit ElementId="ItemName" @bind-Text="@PurchaseForm.ItemName" Placeholder="Name">
                 <Feedback>
                     <ValidationSuccess>Name is good.</ValidationSuccess>
                     <ValidationError>Enter name</ValidationError>
@@ -44,9 +44,9 @@
                 </Field>
             </Validation>
             <Field>
-                <Check TValue="bool" Checked="@PurchaseForm.IsBought" CheckedChanged="@OnRememberMeChanged">Bought</Check>
+                <Check ElementId="Check" TValue="bool" Checked="@PurchaseForm.IsBought" CheckedChanged="@OnRememberMeChanged">Bought</Check>
             </Field>
-            <Blazorise.Button Clicked="@SubmitForm" Type="ButtonType.Submit" PreventDefaultOnSubmit Color="Color.Primary">Submit</Blazorise.Button>
+            <Blazorise.Button ElementId="SubmitButton" Clicked="@SubmitForm" Type="ButtonType.Submit" PreventDefaultOnSubmit Color="Color.Primary">Submit</Blazorise.Button>
             <Blazorise.Button Color="Color.Danger" Clicked="@Cancel">Cancel</Blazorise.Button>
         </Blazorise.CardBody>
     </Blazorise.Card>

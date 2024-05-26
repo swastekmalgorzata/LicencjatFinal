@@ -7,7 +7,7 @@ namespace ApartmentManagmentBlazorAppCopy.Services
 {
     public interface IChoresService
     {
-        IList<Chore>? GetChores(long apartmentId);
+        Task<IList<Chore>> GetChoresAsync(long apartmentId);
         Chore GetChore(long id, long apartmentId);
         Task<long> AddChore(Chore chore, long apartmentId);
         Task MarkChore(long id, bool isDone, string? userId);
@@ -28,9 +28,11 @@ namespace ApartmentManagmentBlazorAppCopy.Services
             return dbContext.Chores.Where(c => c.ApartmentId == apartmentId && c.IsDone == false).ToList();
         }
 
-        public IList<Chore>? GetChores(long apartmentId)
+        public async Task<IList<Chore>> GetChoresAsync(long apartmentId)
         {
-            return dbContext.Chores.Where(c => c.ApartmentId == apartmentId).ToList() ?? null;
+            return await dbContext.Chores
+                .Where(c => c.ApartmentId == apartmentId)
+                .ToListAsync();
         }
 
         public Chore GetChore(long id, long apartmentId) 

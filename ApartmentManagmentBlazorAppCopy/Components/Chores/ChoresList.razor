@@ -24,6 +24,8 @@
                 </TableRow>
             </TableHeader>
             <TableBody>
+                @if (Chores is not null)
+                {
                 @foreach (var chore in Chores)
                 {
                     <TableRow>
@@ -42,7 +44,7 @@
                             <Button Clicked="@(() => DeleteChore(chore.Id))" Color="Color.Danger">Delete</Button>
                         </TableRowCell>
                     </TableRow>
-                }
+                }}
             </TableBody>
         </Table>
     </Div>
@@ -51,13 +53,13 @@
 
 @code {
     [Parameter] public long ApartmentId { get; set; }
-    private IList<Chore>? Chores;
+    public IList<Chore>? Chores = new List<Chore>();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         try
         {
-            Chores = GetChoresFromService();
+            Chores = await GetChoresFromService();
         }
         catch (Exception ex)
         {
@@ -65,9 +67,11 @@
         }
     }
 
-    private IList<Chore>? GetChoresFromService()
+    private async Task<IList<Chore>?> GetChoresFromService()
     {
-        return ChoreServices.GetChores(ApartmentId);
+         
+            var test = await  ChoreServices.GetChoresAsync(ApartmentId);
+            return test;
     }
 
     void EditChore(long choreId)
